@@ -1,0 +1,54 @@
+- name: Define hosts
+  hosts: all
+  tasks:
+   - name: upgrade a server
+     become: true
+     become_user: root
+     apt: update_cache=yes only_upgrade=yes
+     ignore_errors: yes
+
+   - name: ensure docker and dependencies are installed
+     apt: name=docker.io state=latest 
+   - service: name=docker state=started
+
+   - name: enable docker systemd
+     shell: systemctl enable docker
+
+   - name: install APT Transport HTTPS
+     apt: name=apt-transport-https state=latest
+
+   - name: install jq for json
+     apt: name=jq state=latest
+ 
+   - name: Remove swapfile from /etc/fstab
+     mount:
+       name: "{{ item }}"
+       fstype: swap
+       state: absent
+     with_items:
+      - swap
+      - none
+
+   - name: Disable swap
+     command: swapoff -a
+     when: ansible_swaptotal_mb > 0
+
+   - name: Add an apt signing key for Kubernetes
+     apt_key:
+       url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+       state: present
+
+   - name: Adding apt repository for Kubernetes
+     apt_repository:
+      repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+      state: present
+      filename: kubernetes
+   
+   - name: install kubernetes components
+     shell: apt-get install -y kubelet kubeadm kubectl
+
+   - name: start kubelet
+     service: name=kubelet state=started
+
+     
+
