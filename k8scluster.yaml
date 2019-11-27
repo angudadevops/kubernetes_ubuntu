@@ -9,7 +9,7 @@
      shell: "/bin/rm -rf /var/lib/etcd" 
 
    - name: Initialize the Kubernetes cluster using kubeadm
-     command: kubeadm init --pod-network-cidr=10.244.0.0/16
+     command: kubeadm init --pod-network-cidr=10.244.0.0/16 --v 9
      register: kubeadm
   
    - debug: msg={{ kubeadm.stdout_lines }}
@@ -30,11 +30,11 @@
    - name: Install networking plugin to kubernetes cluster
      command: kubectl apply -f {{ item}} 
      with_items:
-     - https://raw.githubusercontent.com/coreos/flannel/62e44c867a2846fefb68bd5f178daf4da3095ccb/Documentation/kube-flannel.yml 
+     - https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml 
 #     - https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/etcd.yaml
 #     - https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/calico.yaml
      - https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
-     - cluster-admin.yaml
+     - /home/anguda/kubernetes_vmware/cluster-admin.yaml
    
    - name: Run KubeProxy
      shell: nohup kubectl proxy --address='0.0.0.0' --accept-hosts='^*$' </dev/null >/dev/null 2>&1 &
@@ -56,7 +56,9 @@
    - name: Reset Kubernetes component
      shell: "kubeadm reset --force"
      register: reset_cluster
-   
+
+   - debug: var=reset_cluster
+
    - name: Create kube directory
      file:
        path: /etc/kubernetes
@@ -69,6 +71,7 @@
 
    - name: Install helm
      shell: kubectl apply -f helm/helm.yaml
+     ignore_errors: true
 
 
 - hosts: web[1]
@@ -78,4 +81,14 @@
    - name: Run kubeadm join
      shell: "{{ kubeadm_join }} --ignore-preflight-errors=swap"
      
+- hosts: web[0]
+  tasks:
+   - name: Get Node name
+     shell: "kubectl get nodes  | grep -v master | awk '{print $1}' | grep -v NAME"
+     register: node_name
 
+   - debug: var=node_name
+
+   - name: Lable the node
+     shell: "kubectl label node {{ item }} node-role.kubernetes.io/node="
+     with_items: "{{ node_name.stdout_lines }}"   

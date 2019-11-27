@@ -45,7 +45,7 @@
       filename: kubernetes
    
    - name: install kubernetes components
-     shell: apt-get install -y kubelet kubeadm kubectl
+     shell: apt-get install -y kubelet=1.14.0-00 kubeadm=1.14.0-00 kubectl=1.14.0-00
 
    - name: start kubelet
      service: name=kubelet state=started
