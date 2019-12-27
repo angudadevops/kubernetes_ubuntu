@@ -33,9 +33,22 @@
      - https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml 
 #     - https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/etcd.yaml
 #     - https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/calico.yaml
-     - https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
-     - /root/kubernetes_vmware/cluster-admin.yaml
-   
+
+   - name: Install Kubernetes Dashboard
+     command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
+
+   - name: Change permissions of the service account(kubernetes-dashboard) for the dashboard
+     command: kubectl create clusterrolebinding kubernetes-dashboard -n kube-system --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard
+
+   - name: Deploy heapster to enable container cluster monitoring and performance analysis on your cluster
+     command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/heapster/master/deploy/kube-config/influxdb/heapster.yaml
+
+   - name: Deploy the influxdb backend for heapster to your cluster
+     command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/heapster/master/deploy/kube-config/influxdb/influxdb.yaml
+
+   - name: Create the heapster cluster role binding for the dashboard
+     command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/heapster/master/deploy/kube-config/rbac/heapster-rbac.yaml
+ 
    - name: Run KubeProxy
      shell: nohup kubectl proxy --address='0.0.0.0' --accept-hosts='^*$' </dev/null >/dev/null 2>&1 &
     
@@ -69,15 +82,18 @@
        src: "/etc/kubernetes/kubeadm-join.command"
        dest: "/etc/kubernetes/kubeadm-join.command"
 
-   - name: Install helm
-     shell: kubectl apply -f helm/helm.yaml
-     ignore_errors: true
-
-
 - hosts: node
   vars:
      kubeadm_join: "{{ lookup('file', '/etc/kubernetes/kubeadm-join.command') }}"
-  tasks: 
+  tasks:
+
+   - name: Reset Kubernetes component
+     shell: "kubeadm reset --force"
+     register: reset_cluster
+
+   - name: remove kubernetes directory
+     shell: "/bin/rm -rf /etc/kubernetes" 
+
    - name: Run kubeadm join
      shell: "{{ kubeadm_join }} --ignore-preflight-errors=swap"
      
@@ -91,4 +107,8 @@
 
    - name: Lable the node
      shell: "kubectl label node {{ item }} node-role.kubernetes.io/node="
-     with_items: "{{ node_name.stdout_lines }}"   
+     with_items: "{{ node_name.stdout_lines }}"  
+
+   - name: Install helm
+     shell: ansible-playbook -i inventory /root/kubernetes_vmware/helm/helm.yaml
+     ignore_errors: true 

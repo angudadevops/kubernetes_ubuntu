@@ -1,6 +1,6 @@
     
 ---
-- hosts: web[0]
+- hosts: master
   tasks:
    - name: "Create tmp directory"
      file:
@@ -27,7 +27,7 @@
      when: helm_exists.rc > 0
 
    - name: "RBAC configuration"
-     shell: "kubectl apply -f helm/rbac-config.yaml"
+     shell: "kubectl apply -f /root/kubernetes_vmware/helm/rbac-config.yaml"
 
    - name: "Init Helm"
      shell: "helm init --service-account tiller"
