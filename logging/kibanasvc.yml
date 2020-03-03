@@ -10,5 +10,6 @@ spec:
     component: kibana
   ports:
   - name: http
+    nodePort: 31113
     port: 5601
   type: NodePort
