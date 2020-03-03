@@ -3,5 +3,6 @@ Here grafana exposed as NodePort, that way you can access your grafana with node
 - Run monitoring.sh with input as create 
 
 - Example:
+```
 bash monitoring.sh
-
+```
