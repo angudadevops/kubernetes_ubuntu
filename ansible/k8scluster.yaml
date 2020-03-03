@@ -30,25 +30,15 @@
    - name: Install networking plugin to kubernetes cluster
      command: kubectl apply -f {{ item}} 
      with_items:
-     - https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml 
-#     - https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/etcd.yaml
-#     - https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/calico.yaml
-
-   - name: Install Kubernetes Dashboard
-     command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
+     - https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml 
+     - https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
+     - https://raw.githubusercontent.com/kubernetes/heapster/master/deploy/kube-config/influxdb/heapster.yaml
+     - https://raw.githubusercontent.com/kubernetes/heapster/master/deploy/kube-config/influxdb/influxdb.yaml
+     - https://raw.githubusercontent.com/kubernetes/heapster/master/deploy/kube-config/rbac/heapster-rbac.yaml    
 
    - name: Change permissions of the service account(kubernetes-dashboard) for the dashboard
      command: kubectl create clusterrolebinding kubernetes-dashboard -n kube-system --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard
 
-   - name: Deploy heapster to enable container cluster monitoring and performance analysis on your cluster
-     command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/heapster/master/deploy/kube-config/influxdb/heapster.yaml
-
-   - name: Deploy the influxdb backend for heapster to your cluster
-     command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/heapster/master/deploy/kube-config/influxdb/influxdb.yaml
-
-   - name: Create the heapster cluster role binding for the dashboard
-     command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/heapster/master/deploy/kube-config/rbac/heapster-rbac.yaml
- 
    - name: Run KubeProxy
      shell: nohup kubectl proxy --address='0.0.0.0' --accept-hosts='^*$' </dev/null >/dev/null 2>&1 &
     
@@ -109,6 +99,20 @@
      shell: "kubectl label node {{ item }} node-role.kubernetes.io/node="
      with_items: "{{ node_name.stdout_lines }}"  
 
-   - name: Install helm
-     shell: ansible-playbook -i inventory /root/kubernetes_vmware/helm/helm.yaml
-     ignore_errors: true 
+   - name: "Check if Helm is installed"
+     shell: command -v helm >/dev/null 2>&1
+     register: helm_exists
+     ignore_errors: yes
+
+   - name: "Install Helm"
+     command: "{{ item }}"
+     args:
+       warn: false
+     with_items:
+       - curl -O https://get.helm.sh/helm-v3.1.1-linux-amd64.tar.gz
+       - tar -xvzf helm-v3.1.1-linux-amd64.tar.gz
+       - cp linux-amd64/helm /usr/local/bin/
+       - cp linux-amd64/helm /usr/bin/
+       - rm -rf helm-v3.1.1-linux-amd64.tar.gz linux-amd64
+
+     when: helm_exists.rc > 0
