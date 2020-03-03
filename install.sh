@@ -17,5 +17,6 @@ for host in `cat inventory | egrep -v 'master|node'`
 	cat /root/.ssh/id_rsa.pub | sshpass -p k8s123 ssh root@$host "cat >> /root/.ssh/authorized_keys"
    done
 
+cd  ansible
 ansible-playbook pre_requisites.yaml -i inventory
 ansible-playbook k8scluster.yaml -i inventory
