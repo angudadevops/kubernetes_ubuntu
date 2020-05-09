@@ -1,4 +1,5 @@
-### This repository will help you to install Kubernetes cluster with ansilbe on baremetal
+### This repository will help you to install Kubernetes cluster with ansilbe on baremetal. [![HitCount](http://hits.dwyl.com/angudadevops/kubernetes_baremetal.svg)](http://hits.dwyl.com/angudadevops/kubernetes_baremetal)
+
 - Prerequisites: 
 1. Spin up nodes on vmware/virtualbox with ubuntu/RHEL/CentOS, here one node is master and another one for node
 2. you can add multiple nodes to the masters 
