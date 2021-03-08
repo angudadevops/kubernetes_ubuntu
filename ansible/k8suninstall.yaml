@@ -1,8 +1,6 @@
 - hosts: all
   gather_facts: yes
   become: true
-  vars_files:
-    - egx_version.yaml
   tasks:
 
    - name: Reset Kubernetes component
@@ -46,4 +44,7 @@
         - /etc/modules-load.d/containerd.conf
         - /etc/apt/trusted.gpg.d/libcontainers* 
         - /etc/default/kubelet
+        - /var/run/dockershim.sock
+        - /var/run/crio/crio.sock
+        - /run/containerd/containerd.sock
 

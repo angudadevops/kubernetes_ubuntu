@@ -1,5 +1,2 @@
-
 [master]
-192.168.0.20
-[node]
-172.16.59.128
+10.110.16.127 ansible_ssh_user=nvidia ansible_ssh_pass=nvidia3D! ansible_sudo_pass=nvidia3D! ansible_ssh_common_args='-o StrictHostKeyChecking=no'

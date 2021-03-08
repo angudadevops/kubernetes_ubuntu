@@ -111,8 +111,6 @@
      shell: "{{ kubeadm_join }}"
 
 - hosts: master
-  vars_files:
-    - egx_version.yaml
   tasks:
    - name: Validate whether Kubernetes cluster installed
      shell: kubectl cluster-info

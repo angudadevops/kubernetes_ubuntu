@@ -41,8 +41,19 @@ else
 fi
 if [ $1 == "install" ]; then
 	echo
-	echo Container RunTime $(cat runtime.yaml | awk -F':' '{print $2}')
-	echo
+	read -p "Enter Kubernetes Runtime: " runtime
+	if [[ $runtime == 'crio' || $runtime == 'containerd' || $runtime == 'docker' ]]; then
+		current=$(cat ansible/runtime.yaml | awk '{print $2}' | tail -1f)
+		sed -ie "s/$current/$runtime/g" ansible/runtime.yaml
+		echo Container RunTime $(cat ansible/runtime.yaml | awk -F':' '{print $2}')
+		echo
+	else
+		echo
+		echo "Available Runtimes are crio, containerd, docker"
+		exit 1
+		echo
+	fi
+
 	echo "Installing Kubernetes Cluster"
 	cd ansible
 	ansible-playbook -i hosts prerequisites.yaml	
