@@ -21,6 +21,10 @@
        path: "/var/lib/etcd"
        state: absent
 
+   - name: Update modporbe
+     command: modprobe br_netfilter
+     when: "'running' not in k8sup.stdout"
+
    - name: Iniitialize the Kubernetes cluster using kubeadm and containerd
      when: "'running' not in k8sup.stdout and runtime == 'containerd' "
      command: kubeadm init --pod-network-cidr=192.168.0.0/16 --cri-socket=/run/containerd/containerd.sock
