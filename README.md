@@ -2,7 +2,8 @@
 
 [![HitCount](http://hits.dwyl.com/angudadevops/kubernetes_baremetal.svg)](http://hits.dwyl.com/angudadevops/kubernetes_baremetal)
 
-
+## Motivation
+https://kubernetes.io/docs/setup/production-environment/container-runtimes/
 
 ## Prerequisites: 
 1. Spin up nodes on vmware/virtualbox with ubuntu/RHEL/CentOS, here one node is master and another one for node
