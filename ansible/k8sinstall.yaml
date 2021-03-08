@@ -1,0 +1,149 @@
+- hosts: master
+  vars_files:
+    - runtime.yaml
+  tasks:
+   - name: Validate whether Kubernetes cluster installed
+     shell: kubectl cluster-info
+     register: k8sup
+     ignore_errors: yes
+
+   - name: Reset Kubernetes component
+     become: true
+     ignore_errors: true
+     when: "'running' not in k8sup.stdout"
+     shell: "kubeadm reset --force"
+     register: reset_cluster
+
+   - name: remove etcd directory
+     become: true
+     when: "'running' not in k8sup.stdout"
+     file:
+       path: "/var/lib/etcd"
+       state: absent
+
+   - name: Iniitialize the Kubernetes cluster using kubeadm and containerd
+     when: "'running' not in k8sup.stdout and runtime == 'containerd' "
+     command: kubeadm init --pod-network-cidr=192.168.0.0/16 --cri-socket=/run/containerd/containerd.sock
+     become: true
+     register: kubeadm
+
+   - name: Initialize the Kubernetes cluster using kubeadm and CRI-O
+     when: "'running' not in k8sup.stdout and runtime == 'crio' "
+     command: kubeadm init --pod-network-cidr=192.168.0.0/16 --cri-socket=//var/run/crio/crio.sock
+     become: true
+     register: kubeadm
+
+   - name: Initialize the Kubernetes cluster using kubeadm and Docker
+     when: "'running' not in k8sup.stdout and runtime == 'docker' "
+     command: kubeadm init --pod-network-cidr=192.168.0.0/16 --cri-socket=/var/run/dockershim.sock
+     become: true
+     register: kubeadm
+
+   - name: Create kube directory
+     when: "'running' not in k8sup.stdout"
+     file:
+      path: $HOME/.kube
+      state: directory
+
+   - name: admin permissions
+     become: true
+     file:
+       path: /etc/kubernetes/admin.conf
+       mode: '0644'
+
+   - name: Copy kubeconfig to home
+     when: "'running' not in k8sup.stdout"
+     copy:
+       remote_src: yes
+       src:  /etc/kubernetes/admin.conf
+       dest:  $HOME/.kube/config
+       mode: '0600'
+
+   - name: Install networking plugin to kubernetes cluster
+     when: "'running' not in k8sup.stdout"
+     command: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+
+   - name: Taint the Kubernetes Control Plane node
+     when: "'running' not in k8sup.stdout"
+     command: kubectl taint nodes --all node-role.kubernetes.io/master-
+
+   - name: Generate join token
+     become: true
+     when: "'running' not in k8sup.stdout"
+     shell: kubeadm token create --print-join-command
+     register: kubeadm_join_cmd
+
+   - set_fact:
+       kubeadm_join: "{{ kubeadm_join_cmd.stdout }}"
+
+   - name: Store join command
+     become: true
+     copy: 
+       content: "{{ kubeadm_join }}" 
+       dest: "/tmp/kubeadm-join.command"
+
+- hosts: node
+  tasks:
+   - name: Reset Kubernetes component
+     become: true
+     shell: "kubeadm reset --force"
+     register: reset_cluster
+
+   - name: Create kube directory
+     become: true
+     file:
+       path: /etc/kubernetes
+       state: directory
+
+   - name: Copy kubeadm-join command to node
+     become: true
+     copy:
+       src: "/tmp/kubeadm-join.command"
+       dest: "/tmp/kubeadm-join.command"
+
+- hosts: node
+  vars:
+     kubeadm_join: "{{ lookup('file', '/tmp/kubeadm-join.command') }}"
+  tasks:
+
+   - name: Run kubeadm join
+     become: true
+     shell: "{{ kubeadm_join }}"
+
+- hosts: master
+  vars_files:
+    - egx_version.yaml
+  tasks:
+   - name: Validate whether Kubernetes cluster installed
+     shell: kubectl cluster-info
+     register: k8sup
+     ignore_errors: yes
+
+   - name: Get Node name
+     shell: "kubectl get nodes  | grep -v master | awk '{print $1}' | grep -v NAME"
+     register: node_name
+     ignore_errors: yes
+     when: "'running' in k8sup.stdout"
+
+   - name: Lable the node
+     shell: "kubectl label node {{ item }} node-role.kubernetes.io/node="
+     with_items: "{{ node_name.stdout_lines }}"
+     when: "'running' in k8sup.stdout"
+     ignore_errors: true
+
+   - name: Check If Helm is Installed
+     shell: command -v helm >/dev/null 2>&1
+     register: helm_exists
+     ignore_errors: yes
+
+   - name: "Install Helm "
+     become: true
+     command: "{{ item }}"
+     args:
+       warn: false
+     with_items:
+       - curl -O https://get.helm.sh/helm-v3.3.3-linux-amd64.tar.gz
+       - tar -xvzf helm-v3.3.3-linux-amd64.tar.gz
+       - cp linux-amd64/helm /usr/local/bin/
+       - rm -rf helm-v3.3.3-linux-amd64.tar.gz linux-amd64
+     when: "helm_exists.rc > 0"

@@ -1,0 +1,49 @@
+- hosts: all
+  gather_facts: yes
+  become: true
+  vars_files:
+    - egx_version.yaml
+  tasks:
+
+   - name: Reset Kubernetes component
+     shell: "kubeadm reset --force"
+     ignore_errors: yes
+
+   - name: Remove Docker and Kubernetes packages for Ubuntu 
+     when: " ansible_distribution == 'Ubuntu' "
+     ignore_errors: yes
+     apt:
+       name: ['kubectl', 'kubeadm','kubelet', 'docker-ce*', "cri-o", "containerd", "cri-o-runc"]
+       state: absent
+       purge: yes
+       force: yes
+
+   - name: Remove installed packages for RHEL/CentOS
+     when:  "ansible_distribution in ['RedHat', 'CentOS']"
+     ignore_errors: yes
+     yum:
+       name: ['kubectl', 'kubeadm','kubelet', 'docker*']
+       state: absent
+       force: yes
+
+   - name: Cleanup Directories
+     ignore_errors: yes
+     file:
+       path: "{{ item }}"
+       state: absent
+     with_items:
+        - /var/lib/etcd
+        - /etc/kubernetes
+        - /usr/bin/helm
+        - /usr/local/cuda*
+        - /var/lib/docker
+        - /var/cuda*
+        - /etc/docker
+        - /var/log/containers
+        - /etc/apt/sources.list.d/devel*
+        - /etc/sysctl.d/99-kubernetes-cri.conf 
+        - /etc/modules-load.d/crio.conf 
+        - /etc/modules-load.d/containerd.conf
+        - /etc/apt/trusted.gpg.d/libcontainers* 
+        - /etc/default/kubelet
+
