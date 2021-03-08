@@ -45,6 +45,7 @@ if [ $1 == "install" ]; then
 	if [[ $runtime == 'crio' || $runtime == 'containerd' || $runtime == 'docker' ]]; then
 		current=$(cat ansible/runtime.yaml | awk '{print $2}' | tail -1f)
 		sed -ie "s/$current/$runtime/g" ansible/runtime.yaml
+		echo
 		echo Container RunTime $(cat ansible/runtime.yaml | awk -F':' '{print $2}')
 		echo
 	else

@@ -32,7 +32,7 @@
      with_items:
         - /var/lib/etcd
         - /etc/kubernetes
-        - /usr/bin/helm
+        - /usr/local/bin/helm
         - /usr/local/cuda*
         - /var/lib/docker
         - /var/cuda*
@@ -44,7 +44,4 @@
         - /etc/modules-load.d/containerd.conf
         - /etc/apt/trusted.gpg.d/libcontainers* 
         - /etc/default/kubelet
-        - /var/run/dockershim.sock
-        - /var/run/crio/crio.sock
-        - /run/containerd/containerd.sock
 

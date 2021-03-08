@@ -22,7 +22,11 @@
        state: absent
 
    - name: Update modporbe
-     command: modprobe br_netfilter
+     become: true
+     command: "{{ item }}"
+     with_items:
+       - modprobe br_netfilter
+       - echo '1'  | sudo tee /proc/sys/net/ipv4/ip_forward
      when: "'running' not in k8sup.stdout"
 
    - name: Iniitialize the Kubernetes cluster using kubeadm and containerd
