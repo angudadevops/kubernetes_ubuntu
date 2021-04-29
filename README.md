@@ -1,7 +1,5 @@
 # Kubernetes on Baremetal
 
-[![HitCount](http://hits.dwyl.com/angudadevops/kubernetes_baremetal.svg)](http://hits.dwyl.com/angudadevops/kubernetes_baremetal)
-
 ## Motivation
 https://kubernetes.io/docs/setup/production-environment/container-runtimes/
 
